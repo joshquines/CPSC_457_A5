@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <pthread.h>
 #include <stdint.h>
-#include <queueStruct.c>
+#include "queueStruct.c"
 
 /*
 P R O D U C E R
