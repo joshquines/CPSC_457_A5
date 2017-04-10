@@ -38,16 +38,17 @@ With unresolved race condition
 
 void producer(void* threadArg){
 
-    // 10 Producer threads
+    // Get object from queue
+    producerStruct* prod = (producerStruct*) threadArg;
+
+    printf("Producer ID is: %i", prod->id);
+
+
+    // Each producer thread sends 10 messages to the consumer 
     int count = 0;
     while(count < 10){
-        // Get object from queue
-        producerStruct* prod = (producerStruct*) arg;
-
-        printf("Producer ID is: %i", prod->id);
-
         // Lock thread  
-        pthread_mutex-lock(prod->lock);
+        pthread_mutex_lock(prod->lock);
 
         // If there isn't any elements to add, wait 
         if(prod->queue->remaining_elements == 0){
@@ -56,15 +57,15 @@ void producer(void* threadArg){
             // increment queue wait 
             prod->queue->wait++;
 
-            // wait  -- what's cond1?
-            pthread_cond_wait(&prod->queue->cond)1, prod->lock);
+            // wait 
+            pthread_cond_wait(&prod->queue->pCond, prod->lock);
         }
 
         // Add to queue 
         queue_add(prod->queue, prod->id);
 
-        // Signal to consumer - what's cond2? 
-        pthread_cond_signal(&prod->queue->cond2);
+        // Signal to consumer 
+        pthread_cond_signal(&prod->queue->cCond);
 
         // Release lock 
         pthread_mutex_unlock(prod->lock);
@@ -85,3 +86,41 @@ psuedocode from tutorial
         // Pthread_cond_signal(&fullcondition)
     // Elem--
 // Release lock
+
+void* consumerInit(void* args){
+
+}
+
+
+int main(){
+
+    printf("Program Starting\n");
+    
+    // initialize the lock
+    pthread_mutex_t lock;
+    pthread_mutex_init(&lock, NULL);
+	
+    // initialize the queue
+    prod_cons_queue queue;
+    queue_initialize(&queue);
+
+    // initialize threads
+    pthread_t prodThreads[10];
+    pthread_t consThread;
+
+    // initialize producer struct arguments for each producer
+    producerStruct prodThreadArgs[10];
+    for (int i=0; i<10; i++){
+		prodThreadArgs[i].queue = &queue;
+		prodThreadArgs[i].lock = &lock;
+		prodThreadArgs[i].id = i + 1;           // Each producer has a unique ID from 1 to 10
+	}
+
+    // initialize consumer struct arguments
+    consumerStruct consThreadArgs;
+    consThreadArgs.queue = &queue;
+    consThreadArgs.lock = &lock;
+
+
+
+}

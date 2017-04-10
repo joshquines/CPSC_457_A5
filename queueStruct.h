@@ -9,7 +9,8 @@ typedef struct queue{
     uint8_t remaining_elements; // # of elements in the queue
     // any more variables that you need can be added
     int wait;
-    pthread_cond_t cond;
+    pthread_cond_t pCond;
+    pthread_cond_t cCond;
 } prod_cons_queue;
 
 void queue_initialize( prod_cons_queue *q );

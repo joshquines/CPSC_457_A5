@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <pthread.h>
-#include "queuestruct.h"
+#include "queueStruct.h"
 
 
 void queue_initialize( prod_cons_queue *q ){
@@ -15,7 +15,8 @@ void queue_initialize( prod_cons_queue *q ){
 	q->tail = 0;
 	q->remaining_elements=0;
 	q->wait=0;
-	pthread_cond_init(&q->cond, NULL); 
+	pthread_cond_init(&q->pCond, NULL); 
+    pthread_cond_init(&q->cCond, NULL); 
 }
     
 void queue_add( prod_cons_queue *q, int element ){
