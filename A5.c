@@ -36,32 +36,31 @@ With unresolved race condition
 
 
 
-void producer(void* threadArg){
+void* producer(void* threadArg){
 
     // Get object from queue
     producerStruct* prod = (producerStruct*) threadArg;
 
     printf("Producer ID is: %i", prod->id);
 
-
     // Each producer thread sends 10 messages to the consumer 
     int count = 0;
     while(count < 10){
-        // Lock thread  
+        // Aquire lock thread  
         pthread_mutex_lock(prod->lock);
 
-        // If there isn't any elements to add, wait 
-        if(prod->queue->remaining_elements == 0){
-            printf("Remaining elements = 0");
+        // If the queue is full, wait
+        if(prod->queue->remaining_elements == 20){
+            printf("Remaining elements = 20");
 
             // increment queue wait 
             prod->queue->wait++;
 
-            // wait 
+            // wait for consumer
             pthread_cond_wait(&prod->queue->pCond, prod->lock);
         }
 
-        // Add to queue 
+        // Add message(ID) to queue 
         queue_add(prod->queue, prod->id);
 
         // Signal to consumer 
@@ -87,7 +86,7 @@ psuedocode from tutorial
     // Elem--
 // Release lock
 
-void* consumerInit(void* args){
+void* consumer(void* args){
 
 }
 
@@ -104,10 +103,6 @@ int main(){
     prod_cons_queue queue;
     queue_initialize(&queue);
 
-    // initialize threads
-    pthread_t prodThreads[10];
-    pthread_t consThread;
-
     // initialize producer struct arguments for each producer
     producerStruct prodThreadArgs[10];
     for (int i=0; i<10; i++){
@@ -121,6 +116,24 @@ int main(){
     consThreadArgs.queue = &queue;
     consThreadArgs.lock = &lock;
 
+    // initialize  and create threads
+    pthread_t consThread;
+    pthread_t prodThreads[10];
 
+    // create 1 consumer thread
+    pthread_create(&consThread, NULL, consumer, &consThreadArgs);
 
+    // create 10 producer threads
+    for (int i=0; i<10; i++){
+        pthread_create(&prodThreads[i], NULL, producer, &prodThreadArgs[i]);
+    }
+    
+    // join threads - waits for threads to terminate
+    pthread_join(consThread, NULL);
+
+    for (int i=0; i<10; i++){
+        pthread_join(prodThreads[i], NULL);
+    }    
+
+    return 0;
 }

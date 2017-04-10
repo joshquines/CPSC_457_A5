@@ -4,13 +4,13 @@
 #define MAX_QUEUE_SIZE 20
 typedef struct queue{
     int element[MAX_QUEUE_SIZE];
-    uint8_t head;
-    uint8_t tail;
-    uint8_t remaining_elements; // # of elements in the queue
+    uint8_t head;                   // first element in the queue
+    uint8_t tail;                   // last element added to the queue
+    uint8_t remaining_elements;     // # of elements in the queue
     // any more variables that you need can be added
-    int wait;
-    pthread_cond_t pCond;
-    pthread_cond_t cCond;
+    int wait;                       // number of messages waiting to be consumed
+    pthread_cond_t pCond;           // producer condition variable
+    pthread_cond_t cCond;           // consumer condition variable
 } prod_cons_queue;
 
 void queue_initialize( prod_cons_queue *q );
