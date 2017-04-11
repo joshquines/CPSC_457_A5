@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <pthread.h>
 #include <stdint.h>
+#include <stdlib.h>
 #include "queueStruct.c"
 
 
@@ -159,29 +160,52 @@ int main(){
     consThreadArgs.lock = &lock;
 
     // initialize  and create threads
+    int rc; 
+    
     pthread_t consThread;
     pthread_t prodThreads[10];
 
+    /* Initialize thread joinable attribute */
+    pthread_attr_t attr;
+    pthread_attr_init(&attr);
+    pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
+
     // create 1 consumer thread
-    pthread_create(&consThread, NULL, consumer, &consThreadArgs);
+    rc = pthread_create(&consThread, &attr, consumer, &consThreadArgs);
+    if (rc) {
+	        printf("ERROR; return code from consumer pthread_create() is %d\n", rc);
+	        exit(-1);
+	}
 
     // create 10 producer threads
     for (int i=0; i<10; i++){
-        pthread_create(&prodThreads[i], NULL, producer, &prodThreadArgs[i]);
+        rc = pthread_create(&prodThreads[i], &attr, producer, &prodThreadArgs[i]);
+        if (rc) {
+	        printf("ERROR; return code from producer pthread_create() is %d\n", rc);
+	        exit(-1);
+	    }
     }
     
     // join threads - waits for threads to terminate
-    pthread_join(consThread, NULL);
+    rc = pthread_join(consThread, NULL);
+    if (rc) {
+	        printf("ERROR; return code from consumer pthread_join() is %d\n", rc);
+	        exit(-1);
+	    }
 
     for (int i=0; i<10; i++){
-        pthread_join(prodThreads[i], NULL);
+        rc = pthread_join(prodThreads[i], NULL);
+        if (rc) {
+	        printf("ERROR; return code from producer pthread_join() is %d\n", rc);
+	        exit(-1);
+	    }
     }    
 
-    printf("--------------\nfinal queue: \n");
+    printf("\n\tfinal queue: \n");
         for(int i=0; i<20;i++)
         {
             printf("%i: %i\n", i, queue.element[i]);
         }
 
-    return 0;
+    pthread_exit(NULL);
 }
