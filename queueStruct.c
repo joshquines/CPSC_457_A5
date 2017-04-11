@@ -30,8 +30,8 @@ void queue_initialize(prod_cons_queue *q)
 	//q->remaining_elements = MAX_QUEUE_SIZE;
     q->remaining_elements = 0;
     // initialize conditions
-    pthread_cond_init(&q->cond1, NULL);
-    pthread_cond_init(&q->cond2, NULL);
+    pthread_cond_init(&q->pCond, NULL);
+    pthread_cond_init(&q->cCond, NULL);
 }
 
 /* ADD */
