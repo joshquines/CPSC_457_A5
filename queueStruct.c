@@ -37,7 +37,7 @@ void queue_add(prod_cons_queue *q, int element)
     }
 }
 
-/* REMOVE */
+
 int queue_remove(prod_cons_queue *q)
 {
     int data1 = 0, *ptr , **data;
