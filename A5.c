@@ -1,4 +1,9 @@
+/*
+10129668 10138118
+CPSC 457
+A5 
 
+*/
 #include <stdio.h>
 #include <pthread.h>
 #include <stdint.h>
