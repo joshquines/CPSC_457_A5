@@ -9,7 +9,7 @@ typedef struct
 {
     prod_cons_queue* queue;
     pthread_mutex_t* lock;
-    int id;		// not a pointer			
+    int id;				
 } producerStruct;
 
 
@@ -31,22 +31,22 @@ void* producer(void* arg)
     int prodCount = 0;
     while (prodCount < 10){
 
-        // Lock tbe tbread
+        // Acquire lock tbread
         pthread_mutex_lock(prod->lock); 
-        // If queue is full, 
+        // If queue is full, wait
 		if(prod->queue->remaining_elements==20)
 		{
             printf("QUEUE: FULL\n"); // Debug 
             // Anoher producer is waiting 
             prod->queue->wait++;  
-            // Waiting 
+            // Wait for consumer signal
             pthread_cond_wait(&prod->queue->pCond, prod->lock);
 		}        
-        // Add to queue 
+        // Add message(ID) to queue 
         queue_add(prod->queue, prod->id);      
-        // Queue added signal to consumerStruct
+        // Signal to consumer
         pthread_cond_signal(&prod->queue->cCond);
-        // Unlock Thread 
+        // Release lock
         pthread_mutex_unlock(prod->lock);
         prodCount++;
     }
@@ -61,12 +61,11 @@ void* consumer(void* args){
     int msgCount = 0;
 
 	while(msgCount < 100){
-        // Lock Thread 
+        // Acquire lock Thread 
 		pthread_mutex_lock(cons->lock);
         
         // If queue empty
-        if(cons->queue->remaining_elements == 0)
-        {
+        if(cons->queue->remaining_elements == 0){
             printf("QUEUE: EMPTY\n"); 
             // Wait
             pthread_cond_wait(&cons->queue->cCond, cons->lock);
@@ -101,36 +100,35 @@ int main(){
     pthread_mutex_t lock;
     pthread_mutex_init(&lock, NULL);
 	
-    
-    // initialize threads
-    pthread_t threadProd[10];
-    producerStruct prodArgs[10];
-    pthread_t threadCon;
-    
     // initialize the queue
     prod_cons_queue queue;
     queue_initialize(&queue);
     
-    // initialize the holder for consumer
+    // initialize producer struct arguments for each producer
+    producerStruct prodArgs[10];
+	for (int i=0; i<10; i++){
+		prodArgs[i].queue = &queue;
+		prodArgs[i].lock = &lock;
+		prodArgs[i].id = i + 1;		// Each producer has a unique ID from 1 to 10
+	}
+
+    // initialize consumer struct arguments
     consumerStruct cons;
     cons.queue = &queue;
     cons.lock = &lock;
-        
-    // loop through and create threads args
-	for (int k=0; k<10; k++)
-    {
-		// initialize producer struct
-		prodArgs[k].queue = &queue;
-		prodArgs[k].lock = &lock;
-		prodArgs[k].id = k + 1;		// passed actual value in
-	}
+
+    // initialize threads
+    pthread_t consThread;
+    pthread_t prodThreads[10];
+    
+    
     int rc;
     pthread_attr_t attr;
     pthread_attr_init(&attr);
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 
-    // create 1 consumerStructThread
-    rc = pthread_create(&threadCon, &attr, consumer, &cons);
+    // create 1 consumer Thread
+    rc = pthread_create(&consThread, &attr, consumer, &cons);
     if (rc) {
             printf("ERROR; return code from consumerStructpthread_create() is %d\n", rc);
             exit(-1);
@@ -139,8 +137,7 @@ int main(){
     // 10 Producer Threads 
     int prodThreadCount = 0;
     while(prodThreadCount < 10){
-
-        rc = pthread_create(&threadProd[prodThreadCount], &attr, producer, &prodArgs[prodThreadCount]);
+        rc = pthread_create(&prodThreads[prodThreadCount], &attr, producer, &prodArgs[prodThreadCount]);
         if (rc) {
             printf("ERROR CODE pthread_create(): %d\n", rc);
             exit(-1);
@@ -149,14 +146,14 @@ int main(){
     }
     
     // join threads - waits for threads to terminate
-    rc = pthread_join(threadCon, NULL);
+    rc = pthread_join(consThread, NULL);
     if (rc) {
             printf("ERROR CODE consumerStructpthread_join():  %d\n", rc);
             exit(-1);
         }
 
     for (int i=0; i<10; i++){
-        rc = pthread_join(threadProd[i], NULL);
+        rc = pthread_join(prodThreads[i], NULL);
         if (rc) {
             printf("ERROR; return code from producer pthread_join() is %d\n", rc);
             exit(-1);
