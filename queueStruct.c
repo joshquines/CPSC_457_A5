@@ -3,54 +3,34 @@
 #include <pthread.h>
 #include "queueStruct.h"
 
-// debugging purposes
-int DEBUG = 1;
 
-/* INIT */
 void queue_initialize(prod_cons_queue *q)
 {
-	printf("queue inializer\n"); 
+	printf("queue inializing\n"); 
  
-    // initialize the queue 
-	for (int i=0; i<20; i++)
-	{		
-        q->element[i] = 0;
+    // set element pointers to NULL
+	for (int i=0; i<20; i++){		
+        q->element[i] = NULL;
 	}
     
     // initialize head and tail
 	q->head = 0;
 	q->tail = 0;
-    
-    // number of waiting producers
+    q->remaining_elements = 0;
     q->wait = 0;
 
-    // initialize remaining_elements
-	// remaining_elements is the number of elements
-	// left to add to the queue
-	//q->remaining_elements = MAX_QUEUE_SIZE;
-    q->remaining_elements = 0;
     // initialize conditions
     pthread_cond_init(&q->pCond, NULL);
     pthread_cond_init(&q->cCond, NULL);
 }
 
-/* ADD */
+
 void queue_add(prod_cons_queue *q, int element)
 {
-	// make head the element
-	q->element[q->head] = element;
-	
-	// increment the head circularly
-	q->head = (q->head + 1) % MAX_QUEUE_SIZE;
-
-	// decrease the remaining elements
-    //if(q->remaining_elements > 0)
-    //{
-      //  q->remaining_elements--;
-    //}
-    q->remaining_elements++;
-	/* DEBUG */
-	if(DEBUG==1) { printf("added %i\t(%i REMAINING, %i WAITING)\n", element, q->remaining_elements, q->wait); }
+	q->element[q->head] = element;              // make head the element
+	q->head = (q->head + 1) % MAX_QUEUE_SIZE;   // increment head, pointer increments circularly
+    q->remaining_elements++;                    // increment remaining elements
+    printf("added %i\t(%i REMAINING, %i WAITING)\n", element, q->remaining_elements, q->wait);  //Debug
 }
 
 /* REMOVE */
@@ -58,27 +38,21 @@ int queue_remove(prod_cons_queue *q)
 {
     int data1 = 0, *ptr , **data;
     
-	// set data to the tail
-	data1 = q->element[q->tail];
+	data1 = q->element[q->tail];        // set data1 to the tail	
+	ptr = &data1;                       // pointer to data1
+	data = &ptr;                        // double pointer
 	
-	ptr = &data1;
-	data = &ptr;
-	// reset the element
-	q->element[q->tail] = 0;
+	q->element[q->tail] = 0;            // reset the element
 	
-	// increment the tail circularly
+	// increment the tail, pointer increments circularly
 	q->tail = (q->tail + 1) % MAX_QUEUE_SIZE;
 	
-	// increment the remaining elements
-	//q->remaining_elements++;
-
-	if(q->remaining_elements > 0)
-    {
+    // decrement remaining elements , if its already 0 dont decrement further
+	if(q->remaining_elements > 0){
         q->remaining_elements--;
     }
-    /* DEBUG */
-	if(DEBUG==1) { printf("removed %i\t(%i REMAINING, %i WAITING)\n", **data, q->remaining_elements, q->wait); }
+
+    printf("removed %i\t(%i REMAINING, %i WAITING)\n", **data, q->remaining_elements, q->wait); //Debug
     
-	// return what is in data
-    return **data;
+    return **data;          // the removed element is returned in a double 
 }
