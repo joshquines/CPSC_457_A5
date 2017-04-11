@@ -23,31 +23,31 @@ typedef struct
 void* producer(void* arg)
 {
     // Get object
-	producerStruct* prodStruct = (producerStruct*) arg;
+	producerStruct* prod = (producerStruct*) arg;
 
-	printf("\tProducer ID: %i\n", prodStruct->id);
+	printf("\tProducer ID: %i\n", prod->id);
 
     // 10 producers to init 
     int prodCount = 0;
     while (prodCount < 10){
 
         // Lock tbe tbread
-        pthread_mutex_lock(prodStruct->lock); 
+        pthread_mutex_lock(prod->lock); 
         // If queue is full, 
-		if(prodStruct->queue->remaining_elements==20)
+		if(prod->queue->remaining_elements==20)
 		{
             printf("QUEUE: FULL\n"); // Debug 
             // Anoher producer is waiting 
-            prodStruct->queue->wait++;  
+            prod->queue->wait++;  
             // Waiting 
-            pthread_cond_wait(&prodStruct->queue->pCond, prodStruct->lock);
+            pthread_cond_wait(&prod->queue->pCond, prod->lock);
 		}        
         // Add to queue 
-        queue_add(prodStruct->queue, prodStruct->id);      
+        queue_add(prod->queue, prod->id);      
         // Queue added signal to consumerStruct
-        pthread_cond_signal(&prodStruct->queue->cCond);
+        pthread_cond_signal(&prod->queue->cCond);
         // Unlock Thread 
-        pthread_mutex_unlock(prodStruct->lock);
+        pthread_mutex_unlock(prod->lock);
         prodCount++;
     }
     pthread_exit(0);
@@ -56,45 +56,45 @@ void* producer(void* arg)
 
 void* consumer(void* args){
     // Get object 
-    consumerStruct* consStruct = (consumerStruct*) args;
+    consumerStruct* cons = (consumerStruct*) args;
     // 100 messages
     int msgCount = 0;
 
 	while(msgCount < 100){
         // Lock Thread 
-		pthread_mutex_lock(consStruct->lock);
+		pthread_mutex_lock(cons->lock);
         
         // If queue empty
-        if(consStruct->queue->remaining_elements == 0)
+        if(cons->queue->remaining_elements == 0)
         {
             printf("QUEUE: EMPTY\n"); 
             // Wait
-            pthread_cond_wait(&consStruct->queue->cCond, consStruct->lock);
+            pthread_cond_wait(&cons->queue->cCond, cons->lock);
         }
 		
         // Remove from queue after waiting 
-		int result = queue_remove(consStruct->queue);
+		int result = queue_remove(cons->queue);
 
-         printf("Element Removed: %i\n", result); 
+        //printf("Element Removed: %i\n", result); 
         // If there is a producer waiting 
-        if(consStruct->queue->wait > 0)
+        if(cons->queue->wait > 0)
         {
             // Decrement waiting producers 
-            consStruct->queue->wait--;
+            cons->queue->wait--;
             // Done signal sent to producer 
-            pthread_cond_signal(&consStruct->queue->pCond);
+            pthread_cond_signal(&cons->queue->pCond);
         }
         
         // unlock
-        pthread_mutex_unlock(consStruct->lock);
+        pthread_mutex_unlock(cons->lock);
         msgCount++;
     }
+    printf("Consumer done");
     pthread_exit(0);
 }
 
 
-int main()
-{
+int main(){
     printf("Program Start\n");
     
     // initialize the lock
@@ -112,9 +112,9 @@ int main()
     queue_initialize(&queue);
     
     // initialize the holder for consumer
-    consumerStruct consStruct;
-    consStruct.queue = &queue;
-    consStruct.lock = &lock;
+    consumerStruct cons;
+    cons.queue = &queue;
+    cons.lock = &lock;
         
     // loop through and create threads args
 	for (int k=0; k<10; k++)
@@ -129,29 +129,32 @@ int main()
     pthread_attr_init(&attr);
     pthread_attr_setdetachstate(&attr, PTHREAD_CREATE_JOINABLE);
 
-    // create 1 consumerStructthread
-    rc = pthread_create(&threadCon, &attr, consumer, &consStruct);
+    // create 1 consumerStructThread
+    rc = pthread_create(&threadCon, &attr, consumer, &cons);
     if (rc) {
             printf("ERROR; return code from consumerStructpthread_create() is %d\n", rc);
             exit(-1);
     }
 
-    // create 10 producer threads
+    // 10 Producer Threads 
+    int prodThreadCount = 0;
+    while(prodThreadCount < 10){
 
-    for (int i=0; i<10; i++){
-        rc = pthread_create(&threadProd[i], &attr, producer, &prodArgs[i]);
+        rc = pthread_create(&threadProd[prodThreadCount], &attr, producer, &prodArgs[prodThreadCount]);
         if (rc) {
-            printf("ERROR; return code from producer pthread_create() is %d\n", rc);
+            printf("ERROR CODE pthread_create(): %d\n", rc);
             exit(-1);
         }
+        prodThreadCount++;
     }
     
     // join threads - waits for threads to terminate
     rc = pthread_join(threadCon, NULL);
     if (rc) {
-            printf("ERROR; return code from consumerStructpthread_join() is %d\n", rc);
+            printf("ERROR CODE consumerStructpthread_join():  %d\n", rc);
             exit(-1);
         }
+
     for (int i=0; i<10; i++){
         rc = pthread_join(threadProd[i], NULL);
         if (rc) {
@@ -160,9 +163,11 @@ int main()
         }
     }
 
-    printf("--------------\nfinal queue: \n");
+    /*printf("--------------\nfinal queue: \n");
     for(int i=0; i<20;i++){
         printf("%i: %i\n", i, queue.element[i]);
-    }
+    }*/
+
+    //pthread_exit(NULL);
     return 0;
 }

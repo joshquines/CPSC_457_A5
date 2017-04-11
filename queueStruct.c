@@ -10,7 +10,7 @@ void queue_initialize(prod_cons_queue *q)
  
     // set element pointers to NULL
 	for (int i=0; i<20; i++){		
-        q->element[i] = NULL;
+        q->element[i] = 0; // NULL gives a warning 
 	}
     
     // initialize head and tail
@@ -30,7 +30,11 @@ void queue_add(prod_cons_queue *q, int element)
 	q->element[q->head] = element;              // make head the element
 	q->head = (q->head + 1) % MAX_QUEUE_SIZE;   // increment head, pointer increments circularly
     q->remaining_elements++;                    // increment remaining elements
-    printf("added %i\t(%i REMAINING, %i WAITING)\n", element, q->remaining_elements, q->wait);  //Debug
+    if (element < 10){
+        printf("Added %i\t\t(%i REMAINING, %i WAITING)\n", element, q->remaining_elements, q->wait);  //Debug
+    }else{
+        printf("Added %i\t(%i REMAINING, %i WAITING)\n", element, q->remaining_elements, q->wait);  //Debug
+    }
 }
 
 /* REMOVE */
@@ -52,7 +56,7 @@ int queue_remove(prod_cons_queue *q)
         q->remaining_elements--;
     }
 
-    printf("removed %i\t(%i REMAINING, %i WAITING)\n", **data, q->remaining_elements, q->wait); //Debug
+    printf("Removed %i\t(%i REMAINING, %i WAITING)\n", **data, q->remaining_elements, q->wait); //Debug
     
     return **data;          // the removed element is returned in a double 
 }
