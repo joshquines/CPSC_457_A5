@@ -41,7 +41,7 @@ void* producer(void* threadArg){
     // Get object from queue
     producerStruct* prod = (producerStruct*) threadArg;
 
-    printf("Producer ID is: %i", prod->id);
+    printf("\tProducer ID is: %i\n", prod->id);
 
     // Each producer thread sends 10 messages to the consumer 
     int count = 0;
@@ -51,8 +51,8 @@ void* producer(void* threadArg){
 
         // If the queue is full, wait
         if(prod->queue->remaining_elements == 20){
-            printf("Remaining elements = 20");
-
+            //printf("Remaining elements = 20\n");
+            printf("queue is full\n");
             // increment queue wait 
             prod->queue->wait++;
 
@@ -66,9 +66,10 @@ void* producer(void* threadArg){
         // Signal to consumer 
         pthread_cond_signal(&prod->queue->cCond);
 
+        count++;
         // Release lock 
         pthread_mutex_unlock(prod->lock);
-        count++;
+        
     }
 }
 
@@ -88,8 +89,9 @@ psuedocode from tutorial
 
 void* consumer(void* threadArg){
 
+    printf("consumer thread inializer\n"); 
     // Get object from queue 
-    consumerStruct* cons = (consumerStruct*) threadArg
+    consumerStruct* cons = (consumerStruct*) threadArg;
 
     // loop 100x
     int consCount = 0;
@@ -98,13 +100,17 @@ void* consumer(void* threadArg){
         // lockthread
         pthread_mutex_lock(cons->lock);
 
+        
         // If the queue is empty, wait 
-        if(cons->queue->remaining_elements == MAX_QUEUE_SIZE){
-            pthread_cond_wait(&cons->queue->cond2, cons->lock);
+        if(cons->queue->remaining_elements == 0){
+            printf("queue empty\n"); 
+            pthread_cond_wait(&cons->queue->cCond, cons->lock);
         }
 
         // Remove from queue 
         int result = queue_remove(cons->queue);
+
+        printf("Item Removed: %i\n", result);        
 
         // If a producer is waiting, 
         if(cons->queue->wait > 0){
@@ -112,14 +118,15 @@ void* consumer(void* threadArg){
             cons->queue->wait--;
 
             // signal to producer 
-            pthread_cond_signal(&cons->queue->cond1);
+            pthread_cond_signal(&cons->queue->pCond);
         }
-
-        // Release lock 
-        pthread_mutex_unlock(cons->lock);
 
         // Increment counter
         consCount++;
+        printf("Consumer remove count: %i\n", consCount);
+
+        // Release lock 
+        pthread_mutex_unlock(cons->lock);
 
     }
 
@@ -169,6 +176,12 @@ int main(){
     for (int i=0; i<10; i++){
         pthread_join(prodThreads[i], NULL);
     }    
+
+    printf("--------------\nfinal queue: \n");
+        for(int i=0; i<20;i++)
+        {
+            printf("%i: %i\n", i, queue.element[i]);
+        }
 
     return 0;
 }
