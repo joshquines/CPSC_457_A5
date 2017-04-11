@@ -47,7 +47,7 @@ void* producer(void* threadArg){
     // Each producer thread sends 10 messages to the consumer 
     int count = 0;
     while(count < 10){
-        // Aquire lock thread  
+        // Acquire lock thread  
         pthread_mutex_lock(prod->lock);
 
         // If the queue is full, wait
@@ -72,6 +72,7 @@ void* producer(void* threadArg){
         pthread_mutex_unlock(prod->lock);
         
     }
+    pthread_exit(0);
 }
 
 
@@ -107,7 +108,7 @@ void* consumer(void* threadArg){
 
         
         // If the queue is empty, wait 
-        if(cons->queue->remaining_elements == 0){
+        while(cons->queue->remaining_elements == 0){
             printf("queue empty\n"); 
             pthread_cond_wait(&cons->queue->cCond, cons->lock);
         }
@@ -134,7 +135,7 @@ void* consumer(void* threadArg){
         pthread_mutex_unlock(cons->lock);
 
     }
-
+    pthread_exit(0);
 }
 
 
