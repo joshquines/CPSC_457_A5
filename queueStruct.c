@@ -29,15 +29,15 @@ void queue_add( prod_cons_queue *q, int element ){
 }
 
 int queue_remove( prod_cons_queue *q ){
-    int **data;
+    int data = 0;
 
-    **data = q->element[q->head];       
+    data = q->element[q->head];       
     q->element[q->head] = 0;
     q->head = (q->head + 1) % MAX_QUEUE_SIZE;                          //decrement tail index
     if(q->remaining_elements > 0){
         q->remaining_elements--;            // decrement remaining elements, one element removes from the queue
     }
-    printf("removed %i\t(%i REMAINING, %i WAITING)\n", **data, q->remaining_elements, q->wait);
-    return **data;                      // the removed element is returned in a double pointer “data”
+    printf("removed %i\t(%i REMAINING, %i WAITING)\n", data, q->remaining_elements, q->wait);
+    return data;                      // the removed element is returned in a double pointer “data”
 }
     

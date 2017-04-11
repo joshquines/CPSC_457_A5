@@ -189,6 +189,7 @@ int main(){
 	        printf("ERROR; return code from producer pthread_create() is %d\n", rc);
 	        exit(-1);
 	    }
+        
     }
     
     // join threads - waits for threads to terminate
