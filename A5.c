@@ -86,7 +86,42 @@ psuedocode from tutorial
     // Elem--
 // Release lock
 
-void* consumer(void* args){
+void* consumer(void* threadArg){
+
+    // Get object from queue 
+    consumerStruct* cons = (consumerStruct*) threadArg
+
+    // loop 100x
+    int consCount = 0;
+    while(consCount < 100){
+
+        // lockthread
+        pthread_mutex_lock(cons->lock);
+
+        // If the queue is empty, wait 
+        if(cons->queue->remaining_elements == MAX_QUEUE_SIZE){
+            pthread_cond_wait(&cons->queue->cond2, cons->lock);
+        }
+
+        // Remove from queue 
+        int result = queue_remove(cons->queue);
+
+        // If a producer is waiting, 
+        if(cons->queue->wait > 0){
+            // decrease waiting producers 
+            cons->queue->wait--;
+
+            // signal to producer 
+            pthread_cond_signal(&cons->queue->cond1);
+        }
+
+        // Release lock 
+        pthread_mutex_unlock(cons->lock);
+
+        // Increment counter
+        consCount++;
+
+    }
 
 }
 
