@@ -79,14 +79,18 @@ void* producer(void* threadArg){
 /*
 C O N S U M E R 
 psuedocode from tutorial
+
+Acquire lock 
+    Remove an element from queue 
+    if(elem == queueSize)
+        Pthread_cond_signal(&fullcondition)
+    Elem--
+Release lock
+
+But with unresolved race condition
 */
 
-// Acquire lock 
-    // Remove an element from queue 
-    // if(elem == queueSize)
-        // Pthread_cond_signal(&fullcondition)
-    // Elem--
-// Release lock
+
 
 void* consumer(void* threadArg){
 
