@@ -10,22 +10,21 @@ typedef struct
     prod_cons_queue* queue;
     pthread_mutex_t* lock;
     int id;		// not a pointer			
-} producerStruct;
+} producer;
 
 
 typedef struct
 {
     prod_cons_queue* queue;
     pthread_mutex_t* lock;
-} consumerStruct;
+} consumer;
 
 
 void* initProd(void* arg)
 {
-    // grab queue holder from args
-	producerStruct* prodStruct = (producerStruct*) arg;
+    // Get object
+	producer* prodStruct = (producer*) arg;
 
-	/* DEBUG */
 	printf("\tProducer ID: %i\n", prodStruct->id);
 
     // 10 producers to init 
@@ -33,74 +32,64 @@ void* initProd(void* arg)
     while (prodCount < 10){
 
         // Lock tbe tbread
-        pthread_mutex_lock(prodStruct->lock);
-            
+        pthread_mutex_lock(prodStruct->lock); 
         // If queue is full, 
 		if(prodStruct->queue->remaining_elements==20)
 		{
-            printf("QUEUE: FULL\n");
-            
+            printf("QUEUE: FULL\n"); // Debug 
             // Anoher producer is waiting 
-            prodStruct->queue->wait++;
-            
+            prodStruct->queue->wait++;  
             // Waiting 
             pthread_cond_wait(&prodStruct->queue->pCond, prodStruct->lock);
-		}
-        
+		}        
         // Add to queue 
-        queue_add(prodStruct->queue, prodStruct->id);
-        
+        queue_add(prodStruct->queue, prodStruct->id);      
         // Queue added signal to consumer 
         pthread_cond_signal(&prodStruct->queue->cCond);
-       
-
         // Unlock Thread 
         pthread_mutex_unlock(prodStruct->lock);
         prodCount++;
     }
+    pthread_exit(0);
 }
 
 
-void* initCons(void* args)
-{
-    printf("consumer thread inializer\n"); 
-    
-    // grab consStruct
-    consumerStruct* consStruct = (consumerStruct*) args;
-    
-    // loop 100 times
-	for(int i=0; i<100; i++)
-	{
-        // lock
+void* initCons(void* args){
+    // Get object 
+    consumer* consStruct = (consumer*) args;
+    // 100 messages
+    int msgCount = 0;
+
+	while(msgCount < 100){
+        // Lock Thread 
 		pthread_mutex_lock(consStruct->lock);
         
-        // wait if the queue is empty (nothing to consume)
+        // If queue empty
         if(consStruct->queue->remaining_elements == 0)
         {
-            printf("queue empty\n"); 
-            
-            // wait
+            printf("QUEUE: EMPTY\n"); 
+            // Wait
             pthread_cond_wait(&consStruct->queue->cCond, consStruct->lock);
         }
 		
-        // remove from queue
+        // Remove from queue after waiting 
 		int result = queue_remove(consStruct->queue);
 
-         printf("Item Removed: %i\n", result); 
-        
-        // check if someone is waiting
+         printf("Element Removed: %i\n", result); 
+        // If there is a producer waiting 
         if(consStruct->queue->wait > 0)
         {
-            // decrease number of waiting producers
+            // Decrement waiting producers 
             consStruct->queue->wait--;
-            
-            // signal to producer that it is done
+            // Done signal sent to producer 
             pthread_cond_signal(&consStruct->queue->pCond);
         }
         
         // unlock
         pthread_mutex_unlock(consStruct->lock);
+        msgCount++;
     }
+    pthread_exit(0);
 }
 
 
@@ -117,7 +106,7 @@ int main()
     
     // initialize threads
     pthread_t threadProd[10];
-    producerStruct prodArgs[10];
+    producer prodArgs[10];
     pthread_t threadCon;
     
     // initialize the queue
@@ -125,7 +114,7 @@ int main()
     queue_initialize(&queue);
     
     // initialize the holder for consumer
-    consumerStruct consStruct;
+    consumer consStruct;
     consStruct.queue = &queue;
     consStruct.lock = &lock;
         
@@ -174,14 +163,14 @@ int main()
     }
 
 	/* DEBUG */
-    if(DEBUG==1)
-	{
+ 
+	
         printf("--------------\nfinal queue: \n");
         for(int i=0; i<20;i++)
         {
             printf("%i: %i\n", i, queue.element[i]);
         }
-    }
+    
     
     return 0;
 }
